@@ -58,15 +58,16 @@ namespace WebApiFileUpload.Controllers
             var provider = new RenameMultipartFormDataStreamProvider(root);
 
             await Request.Content.ReadAsMultipartAsync(provider);
-            int widht = 400;
+            int widht = 300;
             int height = 200;
             foreach (var file in provider.FileData) {
                 var isImage =_imageTypes.Any(imageType =>string.Equals(imageType, file.Headers.ContentType.MediaType,StringComparison.OrdinalIgnoreCase));
                 if (isImage) {
                     var filename = file.LocalFileName.Substring(file.LocalFileName.LastIndexOf("\\", StringComparison.Ordinal) + 1);
-                    var image = Image.FromFile(file.LocalFileName);
-                    ThumbnailImage thumbnailImage = new CustomThumbnailImage(widht, height, image);
-                    thumbnailImage.Save(root+"/thumb_"+filename);
+                    using (var image = Image.FromFile(file.LocalFileName)) {
+                        ThumbnailImage thumbnailImage = new CustomThumbnailImage(widht, height, image);
+                        thumbnailImage.Save(root + "/thumb_" + filename);
+                    }
                 }
 
                 dic.Add(file.Headers.ContentDisposition.Name, file.LocalFileName);

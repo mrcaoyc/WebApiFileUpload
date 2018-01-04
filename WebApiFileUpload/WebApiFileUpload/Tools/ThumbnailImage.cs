@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Web;
 
@@ -83,9 +84,6 @@ namespace WebApiFileUpload.Tools {
         /// <returns></returns>
         public Image GetThumbnailImage() {
             CheckThumbnailParameters();
-            if (!IsNeedCompress()) {
-                return SourceImage;
-            }
             try {
                 return CreateThumbnailImage();
             }
@@ -94,9 +92,25 @@ namespace WebApiFileUpload.Tools {
             }
         }
 
-        public void Save(string filename) {
+        public void Save(string filename,byte quality=50) {
             using (var image = GetThumbnailImage()) {
-                image.Save(filename);
+
+                //设置保存质量
+                EncoderParameters eParams = new EncoderParameters();
+                EncoderParameter eParam = new EncoderParameter(Encoder.Quality, quality);
+                eParams.Param[0] = eParam;
+
+                ImageCodecInfo[] codeInfos = ImageCodecInfo.GetImageEncoders();
+                ImageCodecInfo codeInfo = codeInfos.FirstOrDefault(info => info.FilenameExtension.Equals(FileUnits.GetExtendName(filename),StringComparison.OrdinalIgnoreCase));
+
+                if (codeInfo != null) {
+                    image.Save(filename, codeInfo, eParams);
+                }
+                else {
+                    image.Save(filename);
+                }
+
+                
             }
         }
 
@@ -109,18 +123,6 @@ namespace WebApiFileUpload.Tools {
             Image.GetThumbnailImageAbort callback = () => false;
             //调用Image对象自带的GetThumbnailImage()方法生成缩略图
             return SourceImage.GetThumbnailImage(RealWidth, RealHeight, callback, IntPtr.Zero);
-        }
-
-        /// <summary>
-        /// 检查是否需要压缩图片
-        /// </summary>
-        /// <returns></returns>
-        private bool IsNeedCompress() {
-            //除非原图片的宽度和高度都不目标图片的宽度和高度都大才不压缩，否则压缩
-            if (SourceImageWidth >= Width && SourceImageHeight >= Height) {
-                return true;
-            }
-            return false;
         }
 
         /// <summary>
